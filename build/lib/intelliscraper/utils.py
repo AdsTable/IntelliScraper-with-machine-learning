@@ -7,11 +7,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 def clean_text(text):
-    """ 移除文本中的空格和特殊字符 """
+    """ Remove spaces and special characters from text """
     return re.sub(r'\s+', '', text)
 
 def element_to_string(element):
-    """将元素转换为字符串表示"""
+    """Convert an element to a string representation"""
     return f"{element.name} {' '.join([f'{k}={v}' for k, v in element.attrs.items()])}"
 
 
@@ -27,7 +27,7 @@ def get_most_similar_element(current_html, target_json):
 
 
 def get_most_similar_paths(html, paths, vectorizer):
-    """根据层级路径构建特征向量，并直接找到对应的元素"""
+    """Construct the feature vector according to the hierarchical path and directly find the corresponding element"""
     most_similar_paths = []
     for path in paths:
         most_similar_path = find_most_similar_element_path(html, path, vectorizer)
@@ -37,7 +37,7 @@ def get_most_similar_paths(html, paths, vectorizer):
 
 
 def generate_element_path(element):
-    """生成元素的完整路径"""
+    """Generate the full path of the element"""
     path_parts = []
     while element and element.name:
         path_parts.append(element_to_string(element))
@@ -47,7 +47,7 @@ def generate_element_path(element):
 
 
 def find_most_similar_element_path(html, path, vectorizer):
-    """在HTML中找到与给定路径最相似的元素路径"""
+    """Find the element path most similar to the given path in the HTML"""
     soup = BeautifulSoup(html, 'html.parser')
     all_elements = soup.find_all()
     all_elements_paths = [generate_element_path(el) for el in all_elements]
@@ -58,7 +58,7 @@ def find_most_similar_element_path(html, path, vectorizer):
     return all_elements_paths[most_similar_index]
 
 def parse_rules_to_paths(rules_json):
-    """从JSON规则中提取层级路径"""
+    """Extract hierarchical path from JSON rule"""
     paths = []
     for key, value in rules_json.items():
         paths.extend(value)
@@ -66,19 +66,19 @@ def parse_rules_to_paths(rules_json):
 
 
 def find_element_by_path(html, path):
-    """根据路径找到HTML中的元素"""
+    """Find the element in the HTML based on the path"""
     soup = BeautifulSoup(html, 'html.parser')
     current_element = soup
 
     for part in path.split(" -> "):
         if "[document]" in part:
             continue
-        # 分割标签和属性
+        # Split labels and attributes
         match = re.match(r'(\w+)(.*)', part)
         tag = match.group(1) if match else ''
         attr_str = match.group(2).strip() if match else ''
         attrs = parse_attributes(attr_str)
-        # 查找下一个元素
+        # Find the next element
         found_element = current_element.find(tag, attrs)
         if found_element:
             current_element = found_element
@@ -87,23 +87,23 @@ def find_element_by_path(html, path):
 
 
 def parse_attributes(attr_str):
-    """解析标签的属性字符串"""
+    """Parse the attribute string of the label"""
     attrs = {}
     attributes = split_attributes_improved(attr_str)
     for attribute in attributes:
-        if '[' in attribute:  # 检查是否存在方括号内的列表
-            # 使用正则表达式匹配键值对
+        if '[' in attribute:  # Check if there is a list in square brackets
+            # Use regular expressions to match key-value pairs
             attr_pairs = re.findall(r'(\w+)=\[(.*?)\]|(\w+)=(\S+)', attr_str)
             for attr in attr_pairs:
-                if attr[0]:  # 匹配到形如 key=[value1, value2] 的属性
+                if attr[0]:  # Match to the shape like key=[value1, value2] attributes of
                     key, value = attr[0], attr[1].split(',')
                     value = [v.strip(' "[]\'') for v in value]
-                else:  # 匹配到形如 key=value 的属性
+                else:  # Match to the shape like key=value attributes of
                     key, value = attr[2], attr[3]
                     value = value.strip(' "\'')
                 attrs[key] = value
         else:
-            # 没有列表的情况，直接按空格分割
+            # If there is no list, divide it directly by spaces
             attrs_list = re.split(r'\s+', attribute.strip())
             for attr in attrs_list:
                 if '=' in attr:
